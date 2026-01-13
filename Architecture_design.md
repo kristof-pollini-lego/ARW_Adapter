@@ -39,6 +39,31 @@
 ## 3. Proposed Key Architectural Components
 
 ### 3.1 ARW Adapter (Ingress)
+The ingress point for event from the ARW system. A lightweight service running in Novus or on an Edge device.
+- Responsibility:
+  - Connects to the ARW through the source (API, OPC-UA, MQTT)
+  - Validates, normalizes and (if needed) enriches incoming events into standardized structures (wrappers)
+    - Standardized structures are needed to decouple the ARW specifics from the rest of the vendor/protocol specifics
+  - Pushes events to the Event Handler
+  - The adapter acknowledges to ARW only after it has safely handed off the event to Event Handler
+- Technology considerations:
+  - A microservice or serverless function
+  - GoLang for implementation due to performance and concurrency needs
+    - Low latency, good concurrency, simple deployment
+  - Containerized for easy deployment and scaling
+    - Once containerized, can be deployed on Kubernetes (ArgoCD Novus) or can be deployed to an EMMA device
+    - Kubernetes deployment allows for easy scaling and management
+    - EMMA device deployment allows for edge processing and low-latency needs
+- Persistence:
+  - Primary goal would be to have the ARW persisting in the case the adapter does not acknowledge that the event was sent to the Pulsar topic
+  - Checkpoints:
+    - Persist a per-source resume cursor (sequence/offset/timestamp) to continue from the correct position after restarts.
+    - For Kubernetes: a small Postgres table should be enough to store cursors
+    - For EMMA device: a lightweight SQLite or JSON file could store the needed cursors
+  - Queuing, in case of Pulsar in unavailable:
+    - In-memory queuing should be enough to handle bursts
+    - If more durability is needed, a lightweight embedded queue (e.g., NATS embedded, or SQLite based queue) could be used
+
 
 ### 3.2 Event Handler (Broker)
 
