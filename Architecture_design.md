@@ -1,4 +1,4 @@
-# Case for Engineering Role in Warehousing & Site Logistics - ADW Integration
+# Case for Engineering Role in Warehousing & Site Logistics
 
 ## 1. Assumptions of the problem
 
@@ -64,7 +64,6 @@ The ingress point for event from the ARW system. A lightweight service running i
     - In-memory queuing should be enough to handle bursts
     - If more durability is needed, a lightweight embedded queue (e.g., NATS embedded, or SQLite based queue) could be used
 
-
 ### 3.2 Event Handler (Broker)
 A streaming broker such as a Pulsar  broker (Already available to us with high availability and scalability)
 - Responsibility:
@@ -97,6 +96,9 @@ Microservices erected to consume events from Event Handler
   - Since events are projected to 100 events/second: Python is considered
     - Faster iteration, rich tooling, async client and efficient DB operations are given
     - Python enables the prospect to integrate with Databricks (Nexus)
+- Persistence:
+  - Each service can have its own database or can share a common database
+  - Use of relational databases (PostgreSQL, MySQL) or NoSQL databases (MongoDB, Cassandra) based on the data model and access patterns
 
 ### 3.4 Outbox Publisher
 Getting rid of the dual write problem by implementing the Outbox pattern
@@ -109,6 +111,8 @@ Getting rid of the dual write problem by implementing the Outbox pattern
   - Python of GoLang for implementation
     - Python if tight integration with Event Processing Services is needed
     - GoLang if performance and concurrency is a concern
+- Persistence:
+  - Outbox table in the database of Event Processing Services should be enough
 
 ### 3.5 Downstream Integration services
 Taking the platform events and deliver them to other systems/users
@@ -119,15 +123,35 @@ Taking the platform events and deliver them to other systems/users
 - Technology considerations:
   - Microservices or serverless functions
   - Language choice based on downstream system requirements and team expertise (I would go with GoLang)
-
+- Persistence:
+  - Durable storage for tracking delivery status and retries
+  - Use of relational databases or NoSQL databases based on the data model and access patterns
 
 ### 3.6 Architecture Diagram
-TODO: Create a diagram showing the components and their interactions
 
 ## 4. Data Flow
-TODO: Create a data flow diagram showing how events move through the system
 
 ## 5. Failure Scenarios
+These Failure Scenarios are only examples which were considered during the planning of the ADR.
+
+### 5.1 ARW Connection failure
+The wors failure scenario when the ARW system is unreachable.
+Detectable by Adapter connection error state, or if available, an adapter heartbeat.
+- Mitigation:
+  - Automatic reconnection attempts
+  - Resume from checkpoint cursor, or if ARW is retaining events, resume from last acknowledged event
+- EMMA device positive:
+  - Easy to write a continuous service which can try reconnection and service restart upon crash.
+
+### 5.2 Adapter crash/restart
+Temporary ingestion stop and possible reprocessing could be caused.
+Detectable by either: K8s restarting, or EMMA device watchdog
+- Mitigation:
+  - Checkpoint cursor is persisted
+  - Upon restart, the adapter resumes from the last checkpoint cursor
+  - Duplicates are accepted as idempotency is handled downstream
+- EMMA device positive:
+  - Easy to write a continuous service which can try reconnection and service restart upon crash.
 
 ## 6. Operational Considerations
 Monitoring and alerting:
