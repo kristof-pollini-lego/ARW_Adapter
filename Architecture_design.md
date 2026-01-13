@@ -130,6 +130,7 @@ Taking the platform events and deliver them to other systems/users
 ### 3.6 Architecture Diagram
 The previously described components can be seen visualized in the following diagram:
 
+![Architecture Diagram](diagrams/arch.png)
 
 ## 4. Data Flow
 The imaginary DataFlow of the components described above can be summarized as follows:
