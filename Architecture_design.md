@@ -135,6 +135,7 @@ The previously described components can be seen visualized in the following diag
 ## 4. Data Flow
 The imaginary DataFlow of the components described above can be summarized as follows:
 
+![Data Flow Diagram](diagrams/dataflow.png)
 
 ## 5. Failure Scenarios
 These Failure Scenarios are only examples which were considered during the planning of the ADR.
