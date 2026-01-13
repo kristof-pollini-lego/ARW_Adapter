@@ -66,8 +66,37 @@ The ingress point for event from the ARW system. A lightweight service running i
 
 
 ### 3.2 Event Handler (Broker)
+A streaming broker such as a Pulsar  broker (Already available to us with high availability and scalability)
+- Responsibility:
+  - Durable, ready for event streaming
+  - Partitioned, ready for parallelism
+  - Retention natively supported
+  - Consumers are scalable easily
+- Technology considerations:
+  - Pulsar broker
+    - Partitionable based on correlation key to support FIFO
+    - Durable storage for event retention
+    - DLQ support for failed events
+- Persistence:
+  - Events are durably stored in the Pulsar broker
+  - Retention policies can be configured based on business needs (e.g., time-based, size-based)
+  - DLQ for handling failed events
 
 ### 3.3 Event Processing Services (Microservices)
+Microservices erected to consume events from Event Handler
+- Responsibility:
+  - Consumes events
+  - Performs idempotent processing
+    - Detect any duplicates based on event IDs or hashes
+  - Provides scalability based on needs
+  - Applying business requirements and meaning
+    - e.g., updating inventory state, triggering robot actions, logging operational events
+  - Emitting follow-up events to Outbox Publisher (outbox table)
+  - Handling Invalid, unexpected cases
+- Technology considerations:
+  - Since events are projected to 100 events/second: Python is considered
+    - Faster iteration, rich tooling, async client and efficient DB operations are given
+    - Python enables the prospect to integrate with Databricks (Nexus)
 
 ### 3.4 Outbox Publisher
 
