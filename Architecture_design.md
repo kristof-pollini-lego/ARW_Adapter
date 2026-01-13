@@ -122,9 +122,33 @@ Taking the platform events and deliver them to other systems/users
 
 
 ### 3.6 Architecture Diagram
+TODO: Create a diagram showing the components and their interactions
 
 ## 4. Data Flow
+TODO: Create a data flow diagram showing how events move through the system
 
 ## 5. Failure Scenarios
 
 ## 6. Operational Considerations
+Monitoring and alerting:
+
+- OTEL, Elastic, IStar:
+  - As part of the observability all of these tools provide an appropriate way to monitor the components
+  - Metrics, logs, and traces should be collected
+  - Alerts should be set up based on logs, healthy, and metrics thresholds
+  - Structured Logging should be used for easier parsing and analysis
+  - Separation of platform and domain logs should make it easier to monitor and debug issues
+
+Scaling:
+- Ingress:
+  - The Adapter can easily be scaled horizontally if the ARW supports multiple readers
+  - Primary scaling should rely on ARW retention and replay, not on forced parallelism
+- Event Handler:
+  - Pulsar is scalable via partitions and rokers, it is important to preserve the FIFO keys and allow parallel consumption across many keys
+- Event Process Services:
+  - Horizontal scalability is available via consumers up to the partition count defined by Event Handler
+  - Stateless services are easier to scale
+- Outbox Publisher:
+  - Horizontal scalability is possible if the Outbox table is partitioned or sharded
+- Downstream Integration:
+  - This is the part of the system that can be scaled independently par target system
