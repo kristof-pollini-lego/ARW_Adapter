@@ -99,8 +99,27 @@ Microservices erected to consume events from Event Handler
     - Python enables the prospect to integrate with Databricks (Nexus)
 
 ### 3.4 Outbox Publisher
+Getting rid of the dual write problem by implementing the Outbox pattern
+- Responsibility:
+  - Consumes follow-up events from Event Processing Services
+  - Consumes the Outbox table in a reliable manner
+  - Creates persistence in case of follow-up events
+- Technology considerations:
+  - Microservice for implementing the outbox pattern
+  - Python of GoLang for implementation
+    - Python if tight integration with Event Processing Services is needed
+    - GoLang if performance and concurrency is a concern
 
 ### 3.5 Downstream Integration services
+Taking the platform events and deliver them to other systems/users
+- Responsibility:
+  - Consumes events from Outbox Publisher
+  - Integrates with downstream systems (ERP, MES, Monitoring systems)
+  - Ensures delivery guarantees (at-least-once, exactly-once)
+- Technology considerations:
+  - Microservices or serverless functions
+  - Language choice based on downstream system requirements and team expertise (I would go with GoLang)
+
 
 ### 3.6 Architecture Diagram
 
