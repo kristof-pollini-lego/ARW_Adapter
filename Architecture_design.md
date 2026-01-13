@@ -128,8 +128,12 @@ Taking the platform events and deliver them to other systems/users
   - Use of relational databases or NoSQL databases based on the data model and access patterns
 
 ### 3.6 Architecture Diagram
+The previously described components can be seen visualized in the following diagram:
+
 
 ## 4. Data Flow
+The imaginary DataFlow of the components described above can be summarized as follows:
+
 
 ## 5. Failure Scenarios
 These Failure Scenarios are only examples which were considered during the planning of the ADR.
@@ -152,6 +156,51 @@ Detectable by either: K8s restarting, or EMMA device watchdog
   - Duplicates are accepted as idempotency is handled downstream
 - EMMA device positive:
   - Easy to write a continuous service which can try reconnection and service restart upon crash.
+
+### 5.3 Network Failure between Adapter and Pulsar
+Adapter cannot reach Pulsar broker, events are accumulated on the adapter side.
+Detection can be by publish failure, global notices
+- Mitigation:
+  - ACK ARW only after broker-ack’d publish to Pulsar
+  - Short outages: in-memory queue absorbs bursts
+  - Longer outages: optional durable embedded queue (SQLite/NATS) to persist until Pulsar returns
+
+### 5.4 Pulsar Broker Unavailability
+Events cannot be published or consumed.
+Detectable by publish/consume failures, global notices
+
+Mitigation is same as Section 5.3
+- Pulsar positive:
+  - Highly available at us, with an uptime close to 99%, reducing chances of total unavailability
+
+### 5.5 Event Processing Service crashes mid-processing
+Redelivery is impending, potential duplicates.
+Detectable by service restarts, if possible, redelivery count exposed to monitoring.
+- Mitigation:
+  - Idempotent processing in services vie IDs
+  - Drastic: ack Pulsar only after processing, but increases latency and complexity
+
+### 5.6 Outbox Publisher failure
+Follow-up events are not published, potential backlog.
+Detectable by monitoring outbox table size, service health checks
+- Mitigation:
+  - Durable outbox table
+  - Retry logic in Outbox Publisher
+  - Stateless publisher for easy restarts
+
+### 5.7 Outbox table exponential growth
+If Outbox Publisher fails for a long time, the outbox table can grow large.
+Detectable by monitoring table size, growth rate, query latency
+- Mitigation:
+  - Retention policies defined and enabled on the table
+  - Partition table by time to facilitate easy deletion of old entries
+
+### 5.8 Downstream Integration becomes non-idempotent
+Duplicate events can cause issues in downstream systems.
+Detectable by reconciliation mismatches and duplicate detection in persistence layers
+- Mitigation:
+  - Use idempotency keys if possible
+  - Add reconciliation job if needed.
 
 ## 6. Operational Considerations
 Monitoring and alerting:
