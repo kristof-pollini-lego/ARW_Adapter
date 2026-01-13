@@ -35,3 +35,17 @@
 - The FIFO need is assumed to be a FIFO per correlated key
   - E.g., per robot, per inventory item, per storage location
   - This assumption is made due to a global FIFO would directly impact parallelism
+
+## 3. Proposed Key Architectural Components
+
+### 3.1 ARW Adapter (Ingress)
+
+### 3.2 Event Handler (Broker)
+
+### 3.3 Event Processing Services (Microservices)
+
+### 3.4 Outbox Publisher
+
+### 3.5 Downstream Integration services
+
+### 3.6 Architecture Diagram
