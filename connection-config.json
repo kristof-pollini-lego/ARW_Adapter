@@ -1,0 +1,48 @@
+{
+  "sourceSystem": "ARW-Mock",
+  "topic": "arw.events.standardized",
+  "sources": [
+    {
+      "sourceId": "cell-1-opcua",
+      "protocol": "opcua",
+      "url": "opc.tcp://10.0.1.10:4840",
+      "checkpointPath": "./checkpoint-cell-1.json",
+      "subscription": {
+        "publishingIntervalMs": 200,
+        "nodes": [
+          {
+            "nodeId": "ns=2;s=ARW.Events.InventoryMove",
+            "eventType": "InventoryMoved",
+            "keyField": "unitId"
+          },
+          {
+            "nodeId": "ns=2;s=ARW.Events.InventoryStore",
+            "eventType": "InventoryStored",
+            "keyField": "unitId"
+          },
+          {
+            "nodeId": "ns=2;s=ARW.Events.InventoryRetrieve",
+            "eventType": "InventoryRetrieved",
+            "keyField": "unitId"
+          }
+        ]
+      }
+    },
+    {
+      "sourceId": "cell-2-opcua",
+      "protocol": "opcua",
+      "url": "opc.tcp://10.0.1.11:4840",
+      "checkpointPath": "./checkpoint-cell-2.json",
+      "subscription": {
+        "publishingIntervalMs": 200,
+        "nodes": [
+          {
+            "nodeId": "ns=2;s=ARW.Events.InventoryMove",
+            "eventType": "InventoryMoved",
+            "keyField": "unitId"
+          }
+        ]
+      }
+    }
+  ]
+}
