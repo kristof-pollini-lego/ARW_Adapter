@@ -49,3 +49,9 @@
 ### 3.5 Downstream Integration services
 
 ### 3.6 Architecture Diagram
+
+## 4. Data Flow
+
+## 5. Failure Scenarios
+
+## 6. Operational Considerations
