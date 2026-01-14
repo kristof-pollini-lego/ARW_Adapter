@@ -37,9 +37,32 @@ High level responsibilities:
 - Acknowledge the ARW source only after the broker handoff took place
 - Persist per-source checkpoints for safe restart
 
-### Highlighted Concepts
+## Running Locally
 
-#### Standardized Event Format
+### Prerequisites
+- Go 1.23 or higher
+- Git
+
+### Install dependencies
+```bash
+go mod download
+```
+
+### Configure the adapter
+The adapter uses connection-config.json in the project root.
+You can specify a different path using the CONFIG_PATH environment variable:
+```bash
+export CONFIG_PATH=/path/to/your/config.json
+```
+
+### Run the adapter
+```bash
+go run main.go
+```
+
+## Highlighted Concepts
+
+### Standardized Event Format
 The mocked OPC UA exposes the events, but they are raw,warehouse events, not necessarily business events
 
 The adapter converts the raw events into domain specific events using configurable mapping rules.
@@ -51,13 +74,13 @@ Each emitted event follows a standardized format containing:
 - Timestamp - Event generation time
 - Source information - Such as: System, Id, NodeIds
 
-#### FIFO Ordering:
+### FIFO Ordering:
 Ordering is guaranteed per logical entity, not globally.
 - Pulsar topic: aww.evets.canonical
 - Message key: sourceId:keyFieldValue
 Events with the same key are processed in FIFO order, while different keys are processed in parallel.
 
-#### ACK only after handoff:
+### ACK only after handoff:
 The adapter acknowledges the ARW source only after:
 - The event is successfully published to Pulsar
 - Pulsar acknowledges the publishing
