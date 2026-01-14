@@ -1,4 +1,5 @@
 # Case for Engineering Role in Warehousing & Site Logistics
+## Architecture Decision Record (ADR)
 
 ## 1. Assumptions of the problem
 
@@ -20,6 +21,8 @@
   - OPC-UA servers
   - MQTT brokers
   - vendor API
+- The source exposes low-level information which the adapter should map to domain events
+- Multiple ARW systems are possible per site
 - The events are immutable and timestamped
 - A stable ordering of events is possible through available keys (e.g., timestamps, sequence numbers, IDs)
 - Event order is meaningful
@@ -32,7 +35,7 @@
   - Retention should be based on acknowledgement from the consuming system:
     - But can be time based (last N mintues/hours)
     - Or could be size based (last N events)
-- The FIFO need is assumed to be a FIFO per correlated key
+- The FIFO need is assumed to be a FIFO per correlated key, ordering is preserved by publishing with a deterministic partition key to Pulsar;
   - E.g., per robot, per inventory item, per storage location
   - This assumption is made due to a global FIFO would directly impact parallelism
 
@@ -42,6 +45,8 @@
 The ingress point for event from the ARW system. A lightweight service running in Novus or on an Edge device.
 - Responsibility:
   - Connects to the ARW through the source (API, OPC-UA, MQTT)
+  - Should support multiple ARW sources/endpoints
+  - Each source should have an independent subscription configuration, checkpoint and reconnection loop
   - Validates, normalizes and (if needed) enriches incoming events into standardized structures (wrappers)
     - Standardized structures are needed to decouple the ARW specifics from the rest of the vendor/protocol specifics
   - Pushes events to the Event Handler
@@ -60,6 +65,7 @@ The ingress point for event from the ARW system. A lightweight service running i
     - Persist a per-source resume cursor (sequence/offset/timestamp) to continue from the correct position after restarts.
     - For Kubernetes: a small Postgres table should be enough to store cursors
     - For EMMA device: a lightweight SQLite or JSON file could store the needed cursors
+    - Should run a well supervised reconnection loop with a per-source checkpoint
   - Queuing, in case of Pulsar in unavailable:
     - In-memory queuing should be enough to handle bursts
     - If more durability is needed, a lightweight embedded queue (e.g., NATS embedded, or SQLite based queue) could be used
@@ -141,7 +147,7 @@ The imaginary DataFlow of the components described above can be summarized as fo
 These Failure Scenarios are only examples which were considered during the planning of the ADR.
 
 ### 5.1 ARW Connection failure
-The wors failure scenario when the ARW system is unreachable.
+The worst failure scenario when the ARW system is unreachable.
 Detectable by Adapter connection error state, or if available, an adapter heartbeat.
 - Mitigation:
   - Automatic reconnection attempts
@@ -179,7 +185,7 @@ Mitigation is same as Section 5.3
 Redelivery is impending, potential duplicates.
 Detectable by service restarts, if possible, redelivery count exposed to monitoring.
 - Mitigation:
-  - Idempotent processing in services vie IDs
+  - Idempotent processing in services via IDs
   - Drastic: ack Pulsar only after processing, but increases latency and complexity
 
 ### 5.6 Outbox Publisher failure
