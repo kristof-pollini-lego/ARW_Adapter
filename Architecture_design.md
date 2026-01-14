@@ -9,7 +9,7 @@
   - Robot movement
   - Storaging/retrival action
   - Operational events (errors, retries, maintenance)
-- Real-time, continous operation is assumed
+- Real-time, continuous operation is assumed
 - Failures can delay:
   - Production
   - Inventory mismatches
@@ -169,7 +169,7 @@ Detectable by either: K8s restarting, or EMMA device watchdog
 Adapter cannot reach Pulsar broker, events are accumulated on the adapter side.
 Detection can be by publish failure, global notices
 - Mitigation:
-  - ACK ARW only after broker-ack’d publish to Pulsar
+  - ACK ARW only after broker-acknowledged publish to Pulsar
   - Short outages: in-memory queue absorbs bursts
   - Longer outages: optional durable embedded queue (SQLite/NATS) to persist until Pulsar returns
 
