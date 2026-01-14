@@ -4,18 +4,14 @@ import (
 	"arw_adapter/adapter"
 	"context"
 	"log/slog"
-	"math/rand"
 	"os"
 	"os/signal"
 	"strconv"
 	"sync"
 	"syscall"
-	"time"
 )
 
 func main() {
-	rand.New(rand.NewSource(time.Now().UnixNano()))
-
 	// Move to config later on
 	level := slog.LevelInfo
 	if v := os.Getenv("LOG_LEVEL"); v != "" {
@@ -32,7 +28,11 @@ func main() {
 	}
 
 	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level})
-	logger := slog.New(handler).With("service", "arw-adapter", "version", "0.3.0")
+	logger := slog.New(handler).With(
+		"service", "arw-adapter",
+		"version", "0.1.0",
+		"component", "main",
+	)
 	slog.SetDefault(logger)
 
 	// Mock Pulsar fail rate
@@ -51,6 +51,11 @@ func main() {
 	cfg, err := adapter.LoadConfig(cfgPath)
 	if err != nil {
 		slog.Error("failed to load config", "component", "main", "error", err, "configPath", cfgPath)
+		os.Exit(1)
+	}
+
+	if len(cfg.Sources) == 0 {
+		slog.Error("no sources configured", "component", "main")
 		os.Exit(1)
 	}
 
