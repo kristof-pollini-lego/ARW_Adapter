@@ -34,12 +34,19 @@ type Adapter struct {
 	nodeMap map[string]NodeConfig
 }
 
+const (
+	DefaultQueueSize  = 256
+	DefaultWorkers    = 1
+	MaxPublishRetries = 3
+	RetryBackoffMs    = 50
+)
+
 func NewAdapter(cfg ArwAdapterConfig, src ARWSource, prod Producer) *Adapter {
 	if cfg.QueueSize <= 0 {
-		cfg.QueueSize = 256
+		cfg.QueueSize = DefaultQueueSize
 	}
 	if cfg.Workers <= 0 {
-		cfg.Workers = 1
+		cfg.Workers = DefaultWorkers
 	}
 
 	nodeMap := make(map[string]NodeConfig, len(cfg.Subscription.Nodes))
@@ -76,7 +83,7 @@ func (a *Adapter) Run(ctx context.Context) error {
 	)
 
 	log.Info("adapter started",
-		"op", "run.start",
+		"operation", "run.start",
 		"lastCursor", lastCursor,
 		"workers", a.cfg.Workers,
 		"queueSize", a.cfg.QueueSize,
@@ -100,11 +107,11 @@ func (a *Adapter) Run(ctx context.Context) error {
 		for {
 			select {
 			case <-ctx.Done():
-				log.Info("ingest stopping (context done)", "op", "ingest.stop")
+				log.Info("ingest stopping (context done)", "operation", "ingest.stop")
 				return
 			case Message, ok := <-sub:
 				if !ok {
-					log.Info("source channel closed", "op", "ingest.sourceClosed")
+					log.Info("source channel closed", "operation", "ingest.sourceClosed")
 					return
 				}
 				a.queue <- Message
@@ -124,16 +131,16 @@ func (a *Adapter) Run(ctx context.Context) error {
 			for {
 				select {
 				case <-ctx.Done():
-					wlog.Info("worker stopping (context done)", "op", "worker.stop")
+					wlog.Info("worker stopping (context done)", "operation", "worker.stop")
 					return
 				case Message, ok := <-a.queue:
 					if !ok {
-						wlog.Info("queue closed, worker exiting", "op", "worker.queueClosed")
+						wlog.Info("queue closed, worker exiting", "operation", "worker.queueClosed")
 						return
 					}
 					if err := a.handleOne(ctx, Message, workerID); err != nil {
 						wlog.Error("handle failed",
-							"op", "handleOne",
+							"operation", "handleOne",
 							"retryable", IsRetryable(err),
 							"error", err,
 						)
@@ -146,7 +153,7 @@ func (a *Adapter) Run(ctx context.Context) error {
 	<-ingestDone
 	wg.Wait()
 
-	log.Info("adapter stopped", "op", "run.stop")
+	log.Info("adapter stopped", "operation", "run.stop")
 	return nil
 }
 
@@ -195,14 +202,14 @@ func (a *Adapter) handleOne(ctx context.Context, Message SourceMessage, workerID
 	}
 
 	var pubErr error
-	for attempt := 1; attempt <= 3; attempt++ {
+	for attempt := 1; attempt <= MaxPublishRetries; attempt++ {
 		pubErr = a.prod.Publish(ctx, a.cfg.Topic, env.Key, payload)
 		if pubErr == nil {
 			break
 		}
 
 		log.Warn("publish failed, retrying (ARW not ACKed)",
-			"op", "pulsar.publish",
+			"operation", "pulsar.publish",
 			"attempt", attempt,
 			"cursor", raw.Cursor,
 			"EventId", env.EventId,
@@ -215,7 +222,7 @@ func (a *Adapter) handleOne(ctx context.Context, Message SourceMessage, workerID
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-time.After(time.Duration(attempt*50) * time.Millisecond):
+		case <-time.After(time.Duration(attempt*RetryBackoffMs) * time.Millisecond):
 		}
 	}
 
@@ -233,7 +240,7 @@ func (a *Adapter) handleOne(ctx context.Context, Message SourceMessage, workerID
 	a.maybeSaveCheckpoint(raw.Cursor, env)
 
 	log.Info("event handed off (broker ACK -> ARW ACK)",
-		"op", "handoff.success",
+		"operation", "handoff.success",
 		"cursor", raw.Cursor,
 		"EventId", env.EventId,
 		"eventType", env.EventType,
@@ -254,14 +261,14 @@ func (a *Adapter) maybeSaveCheckpoint(cursor int64, env StandardizedEvent) {
 		if a.lastCheckpoint.CompareAndSwap(prev, cursor) {
 			if err := a.checkpoint.Save(cursor); err != nil {
 				log.Warn("checkpoint save failed (replay safe due to downstream idempotency)",
-					"op", "checkpoint.save",
+					"operation", "checkpoint.save",
 					"cursor", cursor,
 					"EventId", env.EventId,
 					"key", env.Key,
 					"error", err,
 				)
 			} else {
-				log.Debug("checkpoint saved", "op", "checkpoint.save", "cursor", cursor)
+				log.Debug("checkpoint saved", "operation", "checkpoint.save", "cursor", cursor)
 			}
 			return
 		}
